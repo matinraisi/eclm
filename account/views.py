@@ -6,47 +6,56 @@ from .models import CustomUser
 # Create your views here.
 
 class RegisterVeiw(View):
-    template_name = 'core/index.html'
+    template_name = 'account/register.html'
 
-    def post( self, request):
+    def get(self,request):
+        return render(request ,self.template_name)
+    
+    def post(self, request):
         email = request.POST.get("email")
         phone = request.POST.get("phone")
         password1 = request.POST.get("password1")
         password2 = request.POST.get("password2")
 
         if not email or not phone or not password1 or not password2:
-            return render(request , self.template_name, {'error' : "فیلد هارو کامل وارد کنید"})
+            return render(request, self.template_name, {'error': "فیلد هارو کامل وارد کنید"})
 
-        if CustomUser.objects.filter(email=email).exists() :
-            return render(request , self.template_name, {'error' : "ایمیل شما تکراری است و وجود دارد"})
-        if password1 != password2 :
-            return render(request , self.template_name, {'error' : "رمز عبور با تکرار رمز عبور مغایرت ندارد"})
+        if CustomUser.objects.filter(email=email).exists():
+            return render(request, self.template_name, {'error': "ایمیل شما تکراری است و وجود دارد"})
+        
+        if CustomUser.objects.filter(phone_number=phone).exists():
+            return render(request, self.template_name, {'error': "شماره تلفن شما تکراری است و وجود دارد"})
+        
+        if password1 != password2:
+            return render(request, self.template_name, {'error': "رمز عبور با تکرار رمز عبور مغایرت ندارد"})
 
         # ولیدشن شماره تلفن  
         # هش کردن پسورد
-        user = CustomUser.objects.create(
-                username = email,
-                email = email,
-                phone_number = phone,
-                password = password1,
-        )
-
-        login(request , user)
-
-        return redirect("core:home")
+        try:
+            user = CustomUser.objects.create_user(
+                username=email,
+                email=email,
+                phone_number=phone,
+                password=password1,
+            )
+            login(request, user)
+            return redirect("core:home")
+        except Exception as e:
+            return render(request, self.template_name, {'error': "خطا در ثبت نام. لطفا دوباره تلاش کنید"})
         
 
 class LoginView(View):
-    template_name = 'core/index.html'
-    def post(self , request):
+    template_name = 'account/login.html'
+    def get(self,request):
+        return render(request ,self.template_name)
+    def post(self, request):
         email = request.POST.get("email")
         password = request.POST.get("password")
-        user = authenticate(request ,email=email , password=password)
+        user = authenticate(request, username=email, password=password)
         if user is not None:
             login(request, user)
             return redirect("core:home")
         else:
-            
             return render(request, self.template_name, {"error": "ایمیل یا رمز عبور اشتباه است."})
 
 
